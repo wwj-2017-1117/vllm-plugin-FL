@@ -140,7 +140,14 @@ class QKNormRopeFusionPass(VllmInductorPass):
     def __call__(self, graph: torch.fx.Graph):
         self.begin()
         self.matched_count = self.pattern_match_passes.apply(graph)
-        logger.debug("Fused %s QKNorm and Rope patterns", self.matched_count)
+        if self.matched_count:
+            logger.info(
+                "Optimized %s patterns with qknorm_rope_fusion_pass: "
+                "q/k RMSNorm + rotary embedding -> torch.ops.vllm.qkv_rmsnorm_rope",
+                self.matched_count,
+            )
+        else:
+            logger.debug("Fused %s QKNorm and Rope patterns", self.matched_count)
         pattern_idx = 0
         for pattern_entry in self.pattern_match_passes.patterns.values():
             for pattern in pattern_entry:

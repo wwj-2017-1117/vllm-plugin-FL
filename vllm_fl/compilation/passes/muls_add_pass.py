@@ -57,7 +57,14 @@ class MulsAddFusionPass(VllmInductorPass):
     def __call__(self, graph: torch.fx.Graph):
         self.begin()
         self.matched_count = self.pattern_match_passes.apply(graph)
-        logger.debug("Fused %s muls_add patterns", self.matched_count)
+        if self.matched_count:
+            logger.info(
+                "Optimized %s patterns with muls_add_fusion_pass: "
+                "x * scale + y -> torch.ops.vllm.muls_add",
+                self.matched_count,
+            )
+        else:
+            logger.debug("Fused %s muls_add patterns", self.matched_count)
         self.end_and_log()
 
     def is_applicable_for_range(self, compile_range: Range) -> bool:

@@ -4,6 +4,9 @@ from torch import fx as fx
 from vllm.compilation.passes.inductor_pass import get_pass_context
 from vllm.compilation.passes.vllm_inductor_pass import VllmInductorPass
 from vllm.config import VllmConfig
+from vllm.logger import init_logger
+
+logger = init_logger(__name__)
 
 
 class GraphFusionPassManager:
@@ -14,11 +17,20 @@ class GraphFusionPassManager:
 
     def __call__(self, graph: fx.Graph) -> fx.Graph:
         compile_range = get_pass_context().compile_range
+        total_matches = 0
 
         for pass_ in self.passes:
             if pass_.is_applicable_for_range(compile_range):
                 pass_(graph)
+                total_matches += getattr(pass_, "matched_count", 0)
         graph.recompile()
+        if total_matches:
+            logger.info(
+                "Applied FL graph fusion passes for compile_range=%s; "
+                "total_replacements=%d",
+                compile_range,
+                total_matches,
+            )
         return graph
 
     def add(self, pass_: VllmInductorPass):
@@ -60,3 +72,9 @@ class GraphFusionPassManager:
             from vllm_fl.compilation.passes.muls_add_pass import MulsAddFusionPass
 
             self.passes.append(MulsAddFusionPass(config))
+
+        if self.passes:
+            logger.info_once(
+                "Enabled FL graph fusion passes: %s",
+                [pass_.__class__.__name__ for pass_ in self.passes],
+            )

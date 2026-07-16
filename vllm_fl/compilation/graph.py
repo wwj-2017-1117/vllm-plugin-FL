@@ -257,6 +257,13 @@ class GraphWrapper:
             entry.graph = graph
 
             compilation_counter.num_cudagraph_captured += 1
+            logger.info(
+                "Captured %s graph using %s for %s; total_captured=%d",
+                current_platform.device_type.upper(),
+                Graph.graph.__name__,
+                entry.batch_descriptor,
+                compilation_counter.num_cudagraph_captured,
+            )
 
             # important: we need to return the output, rather than
             # the weak ref of the output, so that pytorch can correctly
@@ -337,6 +344,7 @@ def set_graph_params(graph_capture_sizes: list[int]):
         {size: [] for size in graph_capture_sizes},
         {size: [] for size in graph_capture_sizes},
     )
+    logger.info_once("Configured NPU graph capture sizes: %s", graph_capture_sizes)
 
 
 def update_graph_params_workspaces(num_tokens: int, workspace: torch.Tensor):
@@ -362,6 +370,9 @@ def set_draft_graph_params(graph_capture_sizes: list[int]):
         {size: [] for size in graph_capture_sizes},
         {size: [] for size in graph_capture_sizes},
     )
+    logger.info_once(
+        "Configured draft NPU graph capture sizes: %s", graph_capture_sizes
+    )
 
 
 def update_draft_graph_params_workspaces(num_tokens: int, workspace: Any):
@@ -386,6 +397,9 @@ def set_draft_graph_prefill_params(graph_capture_sizes: list[int]):
         {size: None for size in graph_capture_sizes},
         {size: [] for size in graph_capture_sizes},
         {size: [] for size in graph_capture_sizes},
+    )
+    logger.info_once(
+        "Configured draft prefill NPU graph capture sizes: %s", graph_capture_sizes
     )
 
 

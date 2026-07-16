@@ -147,6 +147,12 @@ def npugraph_ex_compile(
         import npugraph_ex as nge
 
         cache_path = os.path.join(cache_dir, key) if (cache_dir and key) else None
+        logger.info_once(
+            "AscendCompiler selected npugraph_ex backend "
+            "(compile_range=%s, cache=%s).",
+            compile_range,
+            "enabled" if cache_path else "disabled",
+        )
         torch.npu.set_compile_mode(jit_compile=False)
         config = nge.CompilerConfig()
         try:
@@ -194,6 +200,11 @@ def npugraph_ex_compile(
     except ImportError:
         import torchair
 
+        logger.info_once(
+            "AscendCompiler selected torchair backend because npugraph_ex is "
+            "not available (compile_range=%s).",
+            compile_range,
+        )
         torch.npu.set_compile_mode(jit_compile=False)
         config = torchair.CompilerConfig()
         _configure_backend(config, ascend_compilation_config, vllm_config)
@@ -292,8 +303,8 @@ class AscendCompiler(CompilerInterface):
                 else getattr(self, "cache_dir", None)
             )
             logger.info_once(
-                "enable_npugraph_ex is enabled, which will bring graph "
-                "compilation optimization."
+                "enable_npugraph_ex is enabled; FL will compile FX graphs "
+                "with npugraph_ex when available, otherwise torchair."
             )
             assert hasattr(self, "vllm_config")
             return npugraph_ex_compile(
@@ -306,6 +317,10 @@ class AscendCompiler(CompilerInterface):
                 key,
                 cache_dir,
             )
+        logger.info_once(
+            "enable_npugraph_ex is disabled; FL will use graph fusion passes "
+            "without npugraph_ex/torchair graph backend compilation."
+        )
         return fusion_pass_compile(
             graph, example_inputs, compiler_config, compile_range, key
         )

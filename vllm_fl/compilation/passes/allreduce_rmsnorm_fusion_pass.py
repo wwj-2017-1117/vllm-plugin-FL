@@ -106,7 +106,15 @@ class MatmulAllReduceAddRMSNormPass(VllmInductorPass):
                 pattern_str = PatternPrettyPrinter.run(pattern.pattern)
                 logger.debug("Pattern %d: %s", pattern_idx, pattern_str)
                 pattern_idx += 1
-        logger.debug("Replaced %s allreduce rmsnorm patterns", self.matched_count)
+        if self.matched_count:
+            logger.info(
+                "Optimized %s patterns with allreduce_rmsnorm_fusion_pass: "
+                "matmul + all_reduce + add_rms_norm -> "
+                "matmul_allreduce_add_rmsnorm",
+                self.matched_count,
+            )
+        else:
+            logger.debug("Replaced %s allreduce rmsnorm patterns", self.matched_count)
         self.end_and_log()
 
     def is_applicable_for_range(self, compile_range: Range) -> bool:
